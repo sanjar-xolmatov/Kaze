@@ -24,6 +24,7 @@ import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.data.SearchProvider
 import app.olauncher.databinding.FragmentSettingsBinding
 import app.olauncher.helper.animateAlpha
 import app.olauncher.helper.appUsagePermissionGranted
@@ -85,6 +86,7 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         populateDateTime()
         populateSwipeApps()
         populateSwipeDownAction()
+        populateSearchEngine()
         populateActionHints()
         initClickListeners()
         initObservers()
@@ -98,6 +100,7 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         binding.dateTimeSelectLayout.visibility = View.GONE
         binding.appThemeSelectLayout.visibility = View.GONE
         binding.swipeDownSelectLayout.visibility = View.GONE
+        binding.searchProviderSelectLayout.visibility = View.GONE
         if (view.id != R.id.textSizeMinus && view.id != R.id.textSizePlus) {
             if (binding.textSizesLayout.isVisible) {
                 binding.textSizesLayout.visibility = View.GONE
@@ -158,6 +161,10 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
             R.id.swipeLeftApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_LEFT_APP)
             R.id.swipeRightApp -> showAppListIfEnabled(Constants.FLAG_SET_SWIPE_RIGHT_APP)
             R.id.swipeDownAction -> binding.swipeDownSelectLayout.visibility = View.VISIBLE
+            R.id.searchProvider -> binding.searchProviderSelectLayout.visibility = View.VISIBLE
+            R.id.searchDuckDuckGo -> updateSearchEngine(SearchProvider.DUCKDUCKGO)
+            R.id.searchGoogle -> updateSearchEngine(SearchProvider.GOOGLE)
+            R.id.searchBing -> updateSearchEngine(SearchProvider.BING)
             R.id.notifications -> updateSwipeDownAction(Constants.SwipeDownAction.NOTIFICATIONS)
             R.id.search -> updateSwipeDownAction(Constants.SwipeDownAction.SEARCH)
 
@@ -232,6 +239,10 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         binding.swipeLeftApp.setOnClickListener(this)
         binding.swipeRightApp.setOnClickListener(this)
         binding.swipeDownAction.setOnClickListener(this)
+        binding.searchProvider.setOnClickListener(this)
+        binding.searchDuckDuckGo.setOnClickListener(this)
+        binding.searchGoogle.setOnClickListener(this)
+        binding.searchBing.setOnClickListener(this)
         binding.search.setOnClickListener(this)
         binding.notifications.setOnClickListener(this)
         binding.appThemeText.setOnClickListener(this)
@@ -643,6 +654,16 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         if (prefs.swipeDownAction == swipeDownFor) return
         prefs.swipeDownAction = swipeDownFor
         populateSwipeDownAction()
+    }
+
+    private fun updateSearchEngine(provider: SearchProvider) {
+        if (prefs.searchProvider == provider.name) return
+        prefs.searchProvider = provider.name
+        populateSearchEngine()
+    }
+
+    private fun populateSearchEngine() {
+        binding.searchProvider.text = SearchProvider.fromName(prefs.searchProvider).label
     }
 
     private fun populateSwipeApps() {

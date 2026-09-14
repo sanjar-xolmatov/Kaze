@@ -123,6 +123,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun saveHomeApp(appModel: AppModel, position: Int) {
         when (appModel) {
             is AppModel.PrivateSpaceHeader -> return
+            is AppModel.WebSearchResult -> return
+            is AppModel.TimeUtilityResult -> return
+            is AppModel.UrlResult -> return
             is AppModel.App -> {
                 when (position) {
                     1 -> {
@@ -281,6 +284,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun saveSwipeApp(appModel: AppModel, isLeft: Boolean) {
         when (appModel) {
             is AppModel.PrivateSpaceHeader -> return
+            is AppModel.WebSearchResult -> return
+            is AppModel.TimeUtilityResult -> return
+            is AppModel.UrlResult -> return
             is AppModel.App -> {
                 if (isLeft) {
                     prefs.appNameSwipeLeft = appModel.appLabel

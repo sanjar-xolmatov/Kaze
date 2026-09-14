@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Olauncher</string>
+    <string name="app_name" translatable="false">Kaze</string>
     <string name="github" translatable="false">Github</string>
     <string name="lock_layout_description" translatable="false">lock layout description to be used a unique id to lock screen</string>
     <!-- Home button for recents feature disabled -->
@@ -114,6 +114,10 @@
     <string name="hidden_apps_message">Note: Tap on \'Olauncher\' at the top of this Settings page to find your hidden apps.\n\nMore details available in our About page.</string>
     <string name="swipe_down_for">Swipe down for</string>
     <string name="search">Search</string>
+    <string name="search_engine">Search engine</string>
+    <string name="duckduckgo">DuckDuckGo</string>
+    <string name="google">Google</string>
+    <string name="bing">Bing</string>
     <string name="notifications">Notifications</string>
     <string name="accessibility_disclosure">Please turn on Olauncher\'s accessibility service in your device\'s settings to enable Double tap to lock gesture.
     \n\nPlease note that this service is only used for this particular feature. Our accessibility service does not collect or share any data.</string>
@@ -135,6 +139,11 @@
     <string name="unable_to_open_app">Unable to open app</string>
     <string name="unable_to_open_app_info">Unable to open app info</string>
     <string name="copied">Copied</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="result_preview">Result: %1$s</string>
+    <string name="search_the_web">Search the web</string>
+    <string name="open_url">Open URL</string>
+    <string name="no_browser_to_open_search">No browser found to open the search</string>
     <string name="system_app_cannot_delete">System app, cannot delete</string>
     <string name="type_a_new_app_name_first">Type a new app name first</string>
     <string name="app_not_found">App not found</string>
@@ -176,4 +185,32 @@
     <string name="invalid_shortcut">Invalid shortcut</string>
     <string name="shortcut_not_found">Shortcut not found</string>
     <string name="unable_to_open_shortcut">Unable to open shortcut</string>
+
+    <string name="timer">Timer</string>
+    <string name="stopwatch">Stopwatch</string>
+    <string name="start">Start</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="reset">Reset</string>
+    <string name="today">Today</string>
+    <string name="timer_done">Time\'s up!</string>
+    <string name="timer_days_until">%1$s until %2$s</string>
+    <string name="timer_ready_hint">Tap Enter or Start to begin</string>
+    <string name="timer_running_hint">Enter to pause</string>
+    <string name="timer_paused_hint">Enter to resume</string>
+    <string name="timer_finished_hint">Tap Reset to start a new timer</string>
+    <string name="stopwatch_ready_hint">Tap Enter or Start to begin</string>
+    <string name="stopwatch_running_hint">Enter to pause</string>
+    <string name="stopwatch_paused_hint">Enter to resume</string>
+    <string name="timer_notification_channel">Timer</string>
+    <string name="timer_notification_title">Timer finished</string>
+    <string name="timer_notification_text">%1$s timer is done</string>
+    <plurals name="days_count">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <plurals name="days_ago_count">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
 </resources>

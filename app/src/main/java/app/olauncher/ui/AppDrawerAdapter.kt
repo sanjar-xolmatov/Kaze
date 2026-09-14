@@ -20,12 +20,16 @@ import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.databinding.AdapterAppDrawerBinding
 import app.olauncher.databinding.AdapterPrivateSpaceHeaderBinding
+import app.olauncher.databinding.AdapterTimeUtilityBinding
+import app.olauncher.databinding.AdapterWebSearchBinding
 import app.olauncher.helper.hideKeyboard
 import app.olauncher.helper.isSystemApp
 import app.olauncher.helper.showKeyboard
-import java.text.Normalizer
+import app.olauncher.universal.AppMatcher
+import app.olauncher.universal.UrlProvider
 
 class AppDrawerAdapter(
+    private val context: Context,
     private var flag: Int,
     private val appLabelGravity: Int,
     private val appClickListener: (AppModel) -> Unit,
@@ -40,6 +44,9 @@ class AppDrawerAdapter(
     companion object {
         const val VIEW_TYPE_APP = 0
         const val VIEW_TYPE_PRIVATE_HEADER = 1
+        const val VIEW_TYPE_WEB_SEARCH = 2
+        const val VIEW_TYPE_TIME_UTILITY = 3
+        const val VIEW_TYPE_URL = 4
 
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<AppModel>() {
             override fun areItemsTheSame(oldItem: AppModel, newItem: AppModel): Boolean = when {
@@ -50,6 +57,15 @@ class AppDrawerAdapter(
                     oldItem.identity == newItem.identity
 
                 oldItem is AppModel.PrivateSpaceHeader && newItem is AppModel.PrivateSpaceHeader -> true
+
+                oldItem is AppModel.WebSearchResult && newItem is AppModel.WebSearchResult ->
+                    oldItem.query == newItem.query
+
+                oldItem is AppModel.TimeUtilityResult && newItem is AppModel.TimeUtilityResult ->
+                    oldItem.title == newItem.title && oldItem.subtitle == newItem.subtitle
+
+                oldItem is AppModel.UrlResult && newItem is AppModel.UrlResult ->
+                    oldItem.url == newItem.url
 
                 else -> false
             }
@@ -62,38 +78,89 @@ class AppDrawerAdapter(
     private var autoLaunch = true
     private var isBangSearch = false
     var allowAutoLaunch = true
-    private val diacriticsRegex = Regex("\\p{InCombiningDiacriticalMarks}+")
-    private val separatorsRegex = Regex("[-_+,.`'\\s\\p{Z}]")
+    var allowWebSearch = true
+    var hasQuery = false
+        private set
     private val appFilter = createAppFilter()
     private val myUserHandle = android.os.Process.myUserHandle()
 
     var appsList: MutableList<AppModel> = mutableListOf()
     var appFilteredList: MutableList<AppModel> = mutableListOf()
+    var timeUtilityProvider: (() -> AppModel.TimeUtilityResult?)? = null
+
+    var selectedPosition = 0
+        private set
+
+    fun moveSelection(delta: Int): Boolean {
+        val last = appFilteredList.lastIndex
+        if (last < 0) return false
+        val next = (selectedPosition + delta).coerceIn(0, last)
+        if (next == selectedPosition) return false
+        val previous = selectedPosition
+        selectedPosition = next
+        if (previous in 0..last) notifyItemChanged(previous)
+        notifyItemChanged(next)
+        return true
+    }
+
+    fun selectedModel(): AppModel? = appFilteredList.getOrNull(selectedPosition)
+
+    fun launchSelectedOrFirst() {
+        val list = appFilteredList
+        val selected = if (list.isEmpty()) null else list.getOrNull(selectedPosition)
+        val target = selected?.takeIf { it.isLaunchable() }
+            ?: list.firstOrNull { it.isLaunchable() }
+        if (target != null) appClickListener(target)
+    }
+
+    private fun AppModel.isLaunchable(): Boolean =
+        this !is AppModel.PrivateSpaceHeader &&
+            (this !is AppModel.App || this.appPackage.isNotEmpty())
+
+    private fun resetSelection() {
+        if (!hasQuery) {
+            selectedPosition = 0
+            return
+        }
+        val last = appFilteredList.lastIndex
+        val clamped = selectedPosition.coerceIn(0, if (last < 0) 0 else last)
+        if (clamped != selectedPosition) selectedPosition = clamped
+    }
 
     override fun getItemViewType(position: Int): Int {
         return when (appFilteredList.getOrNull(position)) {
             is AppModel.PrivateSpaceHeader -> VIEW_TYPE_PRIVATE_HEADER
+            is AppModel.WebSearchResult -> VIEW_TYPE_WEB_SEARCH
+            is AppModel.TimeUtilityResult -> VIEW_TYPE_TIME_UTILITY
+            is AppModel.UrlResult -> VIEW_TYPE_URL
             else -> VIEW_TYPE_APP
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             VIEW_TYPE_PRIVATE_HEADER -> PrivateSpaceHeaderViewHolder(
-                AdapterPrivateSpaceHeaderBinding.inflate(
-                    LayoutInflater.from(parent.context),
-                    parent,
-                    false
-                )
+                AdapterPrivateSpaceHeaderBinding.inflate(inflater, parent, false)
+            )
+
+            VIEW_TYPE_WEB_SEARCH -> WebSearchViewHolder(
+                AdapterWebSearchBinding.inflate(inflater, parent, false)
+            )
+
+            VIEW_TYPE_TIME_UTILITY -> TimeUtilityViewHolder(
+                AdapterTimeUtilityBinding.inflate(inflater, parent, false)
+            )
+
+            VIEW_TYPE_URL -> UrlViewHolder(
+                AdapterTimeUtilityBinding.inflate(inflater, parent, false)
             )
 
             else -> ViewHolder(
-                AdapterAppDrawerBinding.inflate(
-                    LayoutInflater.from(parent.context),
-                    parent,
-                    false
-                )
+                AdapterAppDrawerBinding.inflate(inflater, parent, false)
             )
+        }.also { vh ->
+            vh.itemView.background = context.getDrawable(R.drawable.search_selection_bg)
         }
     }
 
@@ -101,30 +168,38 @@ class AppDrawerAdapter(
         try {
             if (appFilteredList.isEmpty() || position == RecyclerView.NO_POSITION) return
             val appModel = appFilteredList[holder.bindingAdapterPosition]
+            holder.itemView.isSelected = hasQuery && holder.bindingAdapterPosition == selectedPosition
             when (holder) {
-                is PrivateSpaceHeaderViewHolder -> {
-                    holder.bind(
-                        appLabelGravity,
-                        privateSpaceToggleListener,
-                        privateSpaceSettingsListener,
-                    )
-                }
+                is PrivateSpaceHeaderViewHolder -> holder.bind(
+                    appLabelGravity, privateSpaceToggleListener, privateSpaceSettingsListener,
+                )
+
+                is WebSearchViewHolder -> holder.bind(
+                    appLabelGravity, (appModel as AppModel.WebSearchResult).query, appClickListener,
+                )
+
+                is TimeUtilityViewHolder -> holder.bind(
+                    appLabelGravity, appModel as AppModel.TimeUtilityResult,
+                )
+
+                is UrlViewHolder -> holder.bind(
+                    appLabelGravity, appModel as AppModel.UrlResult, appClickListener,
+                )
 
                 is ViewHolder -> holder.bind(
-                    flag,
-                    appLabelGravity,
-                    myUserHandle,
-                    appModel,
-                    appClickListener,
-                    appDeleteListener,
-                    appInfoListener,
-                    appHideListener,
-                    appRenameListener
+                    flag, appLabelGravity, myUserHandle, appModel,
+                    appClickListener, appDeleteListener, appInfoListener,
+                    appHideListener, appRenameListener,
                 )
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        holder.itemView.isSelected = hasQuery && holder.bindingAdapterPosition == selectedPosition
     }
 
     override fun getFilter(): Filter = this.appFilter
@@ -134,14 +209,34 @@ class AppDrawerAdapter(
             override fun performFiltering(charSearch: CharSequence?): FilterResults {
                 isBangSearch = charSearch?.startsWith("!") ?: false
                 autoLaunch = allowAutoLaunch && (charSearch?.startsWith(" ")?.not() ?: true)
+                val q = charSearch?.toString() ?: ""
+                hasQuery = q.isNotBlank()
 
-                val appFilteredList = (if (charSearch.isNullOrBlank()) appsList
-                else appsList.filter { app ->
-                    app !is AppModel.PrivateSpaceHeader && appLabelMatches(app.appLabel, charSearch)
-                } as MutableList<AppModel>)
+                val result = if (!hasQuery) {
+                    appsList.toMutableList()
+                } else {
+                    appsList.mapNotNull { app ->
+                        if (app is AppModel.PrivateSpaceHeader) null
+                        else AppMatcher.score(app.appLabel, app.appPackage, q)?.let { score ->
+                            app to score
+                        }
+                    }.sortedBy { it.second }.map { it.first }.toMutableList()
+                }
+
+                if (hasQuery && result.isEmpty()) {
+                    val webSearchCandidate = q.trim()
+                    if (webSearchCandidate.isNotEmpty() &&
+                        flag == Constants.FLAG_LAUNCH_APP &&
+                        isBangSearch.not()
+                    ) {
+                        val urlRow = UrlProvider.row(webSearchCandidate, context.getString(R.string.open_url))
+                        if (urlRow != null) result.add(urlRow)
+                        else if (allowWebSearch) result.add(AppModel.WebSearchResult(webSearchCandidate))
+                    }
+                }
 
                 val filterResults = FilterResults()
-                filterResults.values = appFilteredList
+                filterResults.values = result
                 return filterResults
             }
 
@@ -149,7 +244,18 @@ class AppDrawerAdapter(
             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
                 results?.values?.let {
                     val items = it as MutableList<AppModel>
+                    val utilityItem = timeUtilityProvider?.invoke()
+                    if (utilityItem != null) {
+                        val hasRealApps = items.any {
+                            it is AppModel.App || it is AppModel.PinnedShortcut
+                        }
+                        if (!hasRealApps) {
+                            items.removeAll { it is AppModel.WebSearchResult }
+                            items.add(utilityItem)
+                        }
+                    }
                     appFilteredList = items
+                    resetSelection()
                     submitList(appFilteredList) {
                         autoLaunch()
                     }
@@ -166,25 +272,16 @@ class AppDrawerAdapter(
                 && flag == Constants.FLAG_LAUNCH_APP
                 && appFilteredList.isNotEmpty()
                 && appFilteredList[0] !is AppModel.PrivateSpaceHeader
+                && appFilteredList[0] !is AppModel.WebSearchResult
+                && appFilteredList[0] !is AppModel.TimeUtilityResult
+                && appFilteredList[0] !is AppModel.UrlResult
             ) appClickListener(appFilteredList[0])
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun appLabelMatches(appLabel: String, charSearch: CharSequence): Boolean {
-        if (appLabel.contains(charSearch.trim(), true)) return true
-        val query = charSearch.normalizeForSearch()
-        return query.isNotEmpty() && appLabel.normalizeForSearch().contains(query, true)
-    }
-
-    private fun CharSequence.normalizeForSearch(): String =
-        Normalizer.normalize(this, Normalizer.Form.NFD)
-            .replace(diacriticsRegex, "")
-            .replace(separatorsRegex, "")
-
     fun setAppList(appsList: MutableList<AppModel>) {
-        // Add empty app for bottom padding in recyclerview and assign to list
         appsList.add(
             AppModel.App(
                 appLabel = "",
@@ -197,11 +294,12 @@ class AppDrawerAdapter(
         )
         this.appsList = appsList
         this.appFilteredList = appsList
+        selectedPosition = 0
         submitList(appsList)
     }
 
     fun launchFirstInList() {
-        val first = appFilteredList.firstOrNull { it !is AppModel.PrivateSpaceHeader }
+        val first = appFilteredList.firstOrNull { it.isLaunchable() }
         if (first != null) appClickListener(first)
     }
 
@@ -218,6 +316,54 @@ class AppDrawerAdapter(
                 settingsListener()
                 true
             }
+        }
+    }
+
+    class WebSearchViewHolder(private val binding: AdapterWebSearchBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(
+            appLabelGravity: Int,
+            query: String,
+            clickListener: (AppModel) -> Unit,
+        ) = with(binding) {
+            webSearchTitle.gravity = appLabelGravity
+            webSearchQuery.gravity = appLabelGravity
+            webSearchQuery.text = query
+            root.setOnClickListener { clickListener(AppModel.WebSearchResult(query)) }
+        }
+    }
+
+    class TimeUtilityViewHolder(private val binding: AdapterTimeUtilityBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(
+            appLabelGravity: Int,
+            item: AppModel.TimeUtilityResult,
+        ) = with(binding) {
+            timeUtilityTitle.gravity = appLabelGravity
+            timeUtilityTitle.text = item.title
+            if (item.subtitle.isNotEmpty()) {
+                timeUtilitySubtitle.visibility = View.VISIBLE
+                timeUtilitySubtitle.gravity = appLabelGravity
+                timeUtilitySubtitle.text = item.subtitle
+            } else {
+                timeUtilitySubtitle.visibility = View.GONE
+            }
+        }
+    }
+
+    class UrlViewHolder(private val binding: AdapterTimeUtilityBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(
+            appLabelGravity: Int,
+            item: AppModel.UrlResult,
+            clickListener: (AppModel) -> Unit,
+        ) = with(binding) {
+            timeUtilityTitle.gravity = appLabelGravity
+            timeUtilityTitle.text = item.title
+            timeUtilitySubtitle.visibility = View.VISIBLE
+            timeUtilitySubtitle.gravity = appLabelGravity
+            timeUtilitySubtitle.text = item.subtitle
+            root.setOnClickListener { clickListener(item) }
         }
     }
 
@@ -238,7 +384,6 @@ class AppDrawerAdapter(
             renameLayout.visibility = View.GONE
             appTitle.visibility = View.VISIBLE
 
-            // Show indicators in title based on app type and state
             appTitle.text = buildString {
                 append(appModel.appLabel)
                 if (appModel.isNew) append(" ✦")
@@ -266,13 +411,11 @@ class AppDrawerAdapter(
                         false -> 1.0f
                     }
                     appHideLayout.visibility = View.VISIBLE
-                    // Only allow renaming non hidden apps
                     appRename.isVisible = flag != Constants.FLAG_HIDDEN_APPS
                 }
                 true
             }
 
-            // Configure rename behavior
             appRename.setOnClickListener {
                 if (appModel.appPackage.isNotEmpty()) {
                     etAppRename.hint = getAppName(etAppRename.context, appModel.appPackage, appModel.user)
@@ -355,7 +498,7 @@ class AppDrawerAdapter(
                     ).toString()
                 }
             } catch (_: Exception) {
-                "" // As a fallback, display an empty string.
+                ""
             }
         }
     }

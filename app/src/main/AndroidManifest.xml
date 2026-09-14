@@ -17,6 +17,10 @@
         tools:ignore="ProtectedPermissions" />
     <!--Used for Private Space support on Android 15+-->
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+    <!--Used for timer notifications-->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--Used for the exact alarm that fires when a timer completes-->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -87,6 +91,10 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".helper.timeutils.TimerAlarmReceiver"
+            android:exported="false" />
 
         <service
             android:name=".helper.MyAccessibilityService"

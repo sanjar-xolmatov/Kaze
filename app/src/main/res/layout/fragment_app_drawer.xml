@@ -51,6 +51,83 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvCalcResult"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="7dp"
+        android:layout_marginEnd="16dp"
+        android:paddingVertical="4dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/utilityLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:animateLayoutChanges="true"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tvUtilityTitle"
+            style="@style/TextLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:layout_marginEnd="16dp"
+            android:paddingVertical="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvUtilityValue"
+            style="@style/TextLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:layout_marginEnd="16dp"
+            android:paddingVertical="4dp" />
+
+        <TextView
+            android:id="@+id/tvUtilityHint"
+            style="@style/TextSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:layout_marginEnd="16dp"
+            android:paddingVertical="2dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="2dp">
+
+            <TextView
+                android:id="@+id/tvUtilitySecondary"
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="@string/reset"
+                android:textAllCaps="true"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvUtilityPrimary"
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="@string/start"
+                android:textAllCaps="true" />
+        </LinearLayout>
+    </LinearLayout>
+
     <Space
         android:layout_width="match_parent"
         android:layout_height="0dp"

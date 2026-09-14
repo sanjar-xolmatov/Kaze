@@ -36,6 +36,7 @@ class Prefs(context: Context) {
     private val WALLPAPER_MSG_SHOWN = "WALLPAPER_MSG_SHOWN"
     private val SHARE_SHOWN_TIME = "SHARE_SHOWN_TIME"
     private val SWIPE_DOWN_ACTION = "SWIPE_DOWN_ACTION"
+    private val SEARCH_PROVIDER = "SEARCH_PROVIDER"
     private val TEXT_SIZE_SCALE = "TEXT_SIZE_SCALE"
     private val BOLD_FONT = "BOLD_FONT"
     private val PRO_MESSAGE_SHOWN = "PRO_MESSAGE_SHOWN"
@@ -118,6 +119,15 @@ class Prefs(context: Context) {
     private val IS_SHORTCUT_SWIPE_LEFT = "IS_SHORTCUT_SWIPE_LEFT"
     private val SHORTCUT_ID_SWIPE_RIGHT = "SHORTCUT_ID_SWIPE_RIGHT"
     private val IS_SHORTCUT_SWIPE_RIGHT = "IS_SHORTCUT_SWIPE_RIGHT"
+
+    private val TIMER_RUNNING = "TIMER_RUNNING"
+    private val TIMER_END_ELAPSED = "TIMER_END_ELAPSED"
+    private val TIMER_DURATION = "TIMER_DURATION"
+    private val TIMER_PAUSED_REMAINING = "TIMER_PAUSED_REMAINING"
+    private val TIMER_FINISHED = "TIMER_FINISHED"
+    private val STOPWATCH_RUNNING = "STOPWATCH_RUNNING"
+    private val STOPWATCH_ACCUMULATED = "STOPWATCH_ACCUMULATED"
+    private val STOPWATCH_START_ELAPSED = "STOPWATCH_START_ELAPSED"
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_FILENAME, 0)
 
@@ -261,6 +271,10 @@ class Prefs(context: Context) {
     var swipeDownAction: Int
         get() = prefs.getInt(SWIPE_DOWN_ACTION, Constants.SwipeDownAction.NOTIFICATIONS)
         set(value) = prefs.edit { putInt(SWIPE_DOWN_ACTION, value).apply() }
+
+    var searchProvider: String
+        get() = prefs.getString(SEARCH_PROVIDER, SearchProvider.default().name).toString()
+        set(value) = prefs.edit { putString(SEARCH_PROVIDER, value).apply() }
 
     var appName1: String
         get() = prefs.getString(APP_NAME_1, "").toString()
@@ -537,6 +551,38 @@ class Prefs(context: Context) {
     var isShortcutSwipeRight: Boolean
         get() = prefs.getBoolean(IS_SHORTCUT_SWIPE_RIGHT, false)
         set(value) = prefs.edit { putBoolean(IS_SHORTCUT_SWIPE_RIGHT, value) }
+
+    var timerRunning: Boolean
+        get() = prefs.getBoolean(TIMER_RUNNING, false)
+        set(value) = prefs.edit { putBoolean(TIMER_RUNNING, value) }
+
+    var timerEndElapsed: Long
+        get() = prefs.getLong(TIMER_END_ELAPSED, 0L)
+        set(value) = prefs.edit { putLong(TIMER_END_ELAPSED, value) }
+
+    var timerDuration: Long
+        get() = prefs.getLong(TIMER_DURATION, 0L)
+        set(value) = prefs.edit { putLong(TIMER_DURATION, value) }
+
+    var timerPausedRemaining: Long
+        get() = prefs.getLong(TIMER_PAUSED_REMAINING, 0L)
+        set(value) = prefs.edit { putLong(TIMER_PAUSED_REMAINING, value) }
+
+    var timerFinished: Boolean
+        get() = prefs.getBoolean(TIMER_FINISHED, false)
+        set(value) = prefs.edit { putBoolean(TIMER_FINISHED, value) }
+
+    var stopwatchRunning: Boolean
+        get() = prefs.getBoolean(STOPWATCH_RUNNING, false)
+        set(value) = prefs.edit { putBoolean(STOPWATCH_RUNNING, value) }
+
+    var stopwatchAccumulated: Long
+        get() = prefs.getLong(STOPWATCH_ACCUMULATED, 0L)
+        set(value) = prefs.edit { putLong(STOPWATCH_ACCUMULATED, value) }
+
+    var stopwatchStartElapsed: Long
+        get() = prefs.getLong(STOPWATCH_START_ELAPSED, 0L)
+        set(value) = prefs.edit { putLong(STOPWATCH_START_ELAPSED, value) }
 
     fun getAppName(location: Int): String {
         return when (location) {

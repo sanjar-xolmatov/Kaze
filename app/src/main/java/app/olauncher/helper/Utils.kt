@@ -43,6 +43,7 @@ import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.data.SearchProvider
 import app.olauncher.data.shortcutIdentity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -561,7 +562,7 @@ fun Context.copyToClipboard(text: String) {
     val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clipData = ClipData.newPlainText(getString(R.string.app_name), text)
     clipboardManager.setPrimaryClip(clipData)
-    showToast("")
+    showToast(R.string.copied_to_clipboard)
 }
 
 fun Context.openUrl(url: String) {
@@ -569,6 +570,26 @@ fun Context.openUrl(url: String) {
     val intent = Intent(Intent.ACTION_VIEW)
     intent.data = Uri.parse(url)
     startActivity(intent)
+}
+
+fun Context.openWebSearch(query: String) {
+    if (query.isBlank()) return
+    val provider = SearchProvider.fromName(Prefs(this).searchProvider)
+    val url = provider.buildSearchUrl(query.trim())
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    if (intent.resolveActivity(packageManager) != null)
+        startActivity(intent)
+    else
+        showToast(R.string.no_browser_to_open_search)
+}
+
+fun Context.openUrlInBrowser(url: String) {
+    if (url.isEmpty()) return
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    if (intent.resolveActivity(packageManager) != null)
+        startActivity(intent)
+    else
+        showToast(R.string.no_browser_to_open_search)
 }
 
 fun Context.isSystemApp(packageName: String, user: UserHandle? = null): Boolean {
